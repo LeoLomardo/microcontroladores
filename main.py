@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pygame
 
 GRID_SIZE = 8
@@ -5,35 +7,25 @@ CELL_SIZE = 80
 WINDOW_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 60
 
+LEVEL_FOLDER = "./levels"
+LEVEL_NAME = "level2.txt"
+LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME
+
 OCEAN_BLUE_COLOR = (37, 139, 207)
 GRID_LINE_COLOR = (18, 86, 140)
 ROCK_COLOR = (88, 88, 88)
 SHIP_COLOR = (139, 69, 19) 
 MINE_COLOR = (28, 28, 28)
 COINS_COLOR = (255, 255, 0)
+START_COLOR = (30, 160, 90)
+FINISH_COLOR = (210, 60, 60)
+TEXT_COLOR = (255, 255, 255)
 
 
 
-OBSTACLES = {
-    (1, 2),
-    (2, 5),
-    (3, 3),
-    (4, 6),
-    (5, 1),
-    (6, 4),
-}
-
-MINES = {
-    (5, 5),
-    (1, 1),
-    (1, 3),
-    (6, 5)
-}
-
-COINS = {
-    (2, 2),
-    (4, 4)
-}
+OBSTACLES = set()
+MINES = set()
+COINS = set()
 
 # WASD = (direcao q move em X, direcao q move em Y)
 MOVE_BY_KEY = {
@@ -44,6 +36,68 @@ MOVE_BY_KEY = {
 }
 
 colected_coins = 0
+
+def carregar_level(caminho):
+    linhas = []
+
+    with caminho.open("r", encoding="utf-8") as arquivo:
+        for linha in arquivo:
+            linha = linha.strip()
+
+            if linha:
+                linhas.append(linha)
+
+    if len(linhas) != GRID_SIZE:
+        raise ValueError(f"O level precisa ter {GRID_SIZE} linhas.")
+
+    obstacles = set()
+    mines = set()
+    coins = set()
+    start_position = None
+    finish_position = None
+
+    for row, linha in enumerate(linhas):
+        if len(linha) != GRID_SIZE:
+            raise ValueError(f"A linha {row + 1} precisa ter {GRID_SIZE} caracteres")
+
+        for col, simbolo in enumerate(linha):
+            position = (col, row)
+
+            if simbolo == ".":
+                continue
+
+            if simbolo == "#":
+                obstacles.add(position)
+
+            elif simbolo == "M":
+                mines.add(position)
+
+            elif simbolo == "C":
+                coins.add(position)
+
+            elif simbolo == "S":
+                if start_position is not None:
+                    raise ValueError("Ponto de partida S ja defindo")
+
+                start_position = position
+
+            elif simbolo == "F":
+                if finish_position is not None:
+                    raise ValueError("Destino F já definido")
+
+                finish_position = position
+                
+            else:
+                raise ValueError(f"Simbolo invalido no level: {simbolo}")
+
+    if start_position is None:
+        raise ValueError("Faltou definir ponto de partida S")
+
+    if finish_position is None:
+        raise ValueError("Faltou definir ponto de chegada F")
+
+    return start_position, finish_position, obstacles, mines, coins, len(coins)
+
 
 def valid_position(col, row):
     if col < 0 or col >= GRID_SIZE:
@@ -93,6 +147,17 @@ def desenha_moeda(screen):
     for col, row in COINS:
         centro, raio = obter_dados_circulo(col, row, padding=12)
         pygame.draw.circle(screen, COINS_COLOR, centro, raio)
+
+
+def desenha_ponto_level(screen, fonte, position, color, letra):
+    col, row = position
+    rect = desenha_ret(col, row, padding=12)
+    pygame.draw.rect(screen, color, rect, border_radius=8)
+
+    texto = fonte.render(letra, True, TEXT_COLOR)
+    texto_rect = texto.get_rect(center=rect.center)
+    screen.blit(texto, texto_rect)
+
 
 #isso aqui eu pedi pro gpt fazer, falta conhecimento artistico
 def desenha_mina(screen):
@@ -159,7 +224,11 @@ def desarma_bomba(ship_col, ship_row):
 #def coleta_moedas()
 
 def main():
-    global colected_coins
+    global OBSTACLES, MINES, COINS, colected_coins
+
+    start_position, finish_position, OBSTACLES, MINES, COINS, total_coins = carregar_level(LEVEL_FILE)
+    colected_coins = 0
+
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
     pygame.display.set_caption("Nacio Microcontroladores")
@@ -169,8 +238,8 @@ def main():
 
     clock = pygame.time.Clock()
 
-    ship_col = 0
-    ship_row = 0
+    ship_col, ship_row = start_position
+    mensagem = ""
     running = True
 
     while running:
@@ -191,14 +260,24 @@ def main():
                     if valid_position(next_col, next_row):
                         ship_col = next_col
                         ship_row = next_row
+                        mensagem = ""
                         
                         if (ship_col, ship_row) in MINES:
-                            print("EXPLODIU!!!!")
+                            mensagem = "EXPLODIU!!!!"
+                            print(mensagem)
                         elif(ship_col, ship_row) in COINS:
                             colected_coins +=1
-                            print("COLETOU MOEDA!")
+                            mensagem = "COLETOU MOEDA!"
+                            print(mensagem)
                             print(colected_coins)
                             COINS.remove((ship_col,ship_row))
+                        elif (ship_col, ship_row) == finish_position:
+                            if colected_coins == total_coins:
+                                mensagem = "CHEGOU AO DESTINO!"
+                            else:
+                                mensagem = "Falta coletar moedas"
+
+                            print(mensagem)
                 
                 elif event.key == pygame.K_SPACE:
                     print('leu a barra de espaco\n')
@@ -206,6 +285,8 @@ def main():
 
         
         desenha_tab(screen)
+        desenha_ponto_level(screen, fonte, start_position, START_COLOR, "S")
+        desenha_ponto_level(screen, fonte, finish_position, FINISH_COLOR, "F")
         desenha_pedra(screen)
         desenha_navio(screen, ship_col, ship_row)
         desenha_mina(screen)
@@ -213,6 +294,10 @@ def main():
 
         texto = fonte.render(f"Moedas: {colected_coins}", True, (255, 255, 0))
         screen.blit(texto, (10, 10))
+
+        if mensagem:
+            texto_mensagem = fonte.render(mensagem, True, TEXT_COLOR)
+            screen.blit(texto_mensagem, (10, WINDOW_SIZE - 40))
         
         pygame.display.flip()
         clock.tick(FPS)
