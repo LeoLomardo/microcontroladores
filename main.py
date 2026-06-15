@@ -8,7 +8,7 @@ WINDOW_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 60
 
 LEVEL_FOLDER = "./levels"
-LEVEL_NAME = "level2.txt"
+LEVEL_NAME = "LD_8.txt"
 LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME
 
 OCEAN_BLUE_COLOR = (37, 139, 207)
@@ -159,7 +159,6 @@ def desenha_ponto_level(screen, fonte, position, color, letra):
     screen.blit(texto, texto_rect)
 
 
-#isso aqui eu pedi pro gpt fazer, falta conhecimento artistico
 def desenha_mina(screen):
     for col, row in MINES:
         mine_COLOR_rect = desenha_ret(col, row, padding=18)
