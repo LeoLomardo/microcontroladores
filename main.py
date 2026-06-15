@@ -1,6 +1,8 @@
 from pathlib import Path
-
+import json
 import pygame
+import tkinter as tk
+from tkinter import ttk
 
 GRID_SIZE = 8
 CELL_SIZE = 80
@@ -8,8 +10,8 @@ WINDOW_SIZE = GRID_SIZE * CELL_SIZE
 FPS = 60
 
 LEVEL_FOLDER = "./levels"
-LEVEL_NAME = "LD_8.txt"
-LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME
+LEVEL_NAME_JSON = "fases.json"
+LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME_JSON
 
 OCEAN_BLUE_COLOR = (37, 139, 207)
 GRID_LINE_COLOR = (18, 86, 140)
@@ -37,18 +39,60 @@ MOVE_BY_KEY = {
 
 colected_coins = 0
 
-def carregar_level(caminho):
-    linhas = []
-
+def carregar_fases(caminho):
     with caminho.open("r", encoding="utf-8") as arquivo:
-        for linha in arquivo:
-            linha = linha.strip()
+        dados = json.load(arquivo)
 
-            if linha:
-                linhas.append(linha)
+    return dados["fases"]
+
+
+def abrir_menu(fases):
+    fase_escolhida = {"fase": None}
+
+    janela = tk.Tk()
+    janela.title("Escolha a fase")
+    janela.geometry("300x150")
+
+    nomes_fases = []
+
+    for fase in fases:
+        nomes_fases.append(fase["nome"])
+
+    label = tk.Label(janela, text="Escolha uma fase:")
+    label.pack()
+
+    dropdown = ttk.Combobox(janela, values=nomes_fases)
+    dropdown.pack()
+    dropdown.current(0)
+
+    def iniciar():
+        nome_selecionado = dropdown.get()
+
+        for fase in fases:
+            if fase["nome"] == nome_selecionado:
+                fase_escolhida["fase"] = fase
+                break
+
+        janela.destroy()
+
+    botao = tk.Button(janela, text="Iniciar", command=iniciar)
+    botao.pack()
+
+    janela.mainloop()
+
+    return fase_escolhida["fase"]
+
+def carregar_level(fase):
+
+    linhas = fase["mapa"]
+
+    if not linhas:
+        raise ValueError(f"Fase com esse id nao foi encontrada")
 
     if len(linhas) != GRID_SIZE:
         raise ValueError(f"O level precisa ter {GRID_SIZE} linhas.")
+
+
 
     obstacles = set()
     mines = set()
@@ -58,7 +102,7 @@ def carregar_level(caminho):
 
     for row, linha in enumerate(linhas):
         if len(linha) != GRID_SIZE:
-            raise ValueError(f"A linha {row + 1} precisa ter {GRID_SIZE} caracteres")
+            raise ValueError(f"Tamanho das linhas invalido")
 
         for col, simbolo in enumerate(linha):
             position = (col, row)
@@ -111,7 +155,6 @@ def valid_position(col, row):
 
     return True
 
-
 def desenha_ret(col, row, padding=0):
     return pygame.Rect(
         col * CELL_SIZE + padding,
@@ -129,14 +172,12 @@ def obter_dados_circulo(col, row, padding=0):
     
     return (centro_x, centro_y), raio
 
-
 def desenha_tab(screen):
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
             color = OCEAN_BLUE_COLOR
             pygame.draw.rect(screen, color, desenha_ret(col, row))
             pygame.draw.rect(screen, GRID_LINE_COLOR, desenha_ret(col, row), width=1)
-
 
 def desenha_pedra(screen):
     for col, row in OBSTACLES:
@@ -148,7 +189,6 @@ def desenha_moeda(screen):
         centro, raio = obter_dados_circulo(col, row, padding=12)
         pygame.draw.circle(screen, COINS_COLOR, centro, raio)
 
-
 def desenha_ponto_level(screen, fonte, position, color, letra):
     col, row = position
     rect = desenha_ret(col, row, padding=12)
@@ -158,7 +198,7 @@ def desenha_ponto_level(screen, fonte, position, color, letra):
     texto_rect = texto.get_rect(center=rect.center)
     screen.blit(texto, texto_rect)
 
-
+#isso aqui eu pedi pro gpt fazer, falta conhecimento artistico
 def desenha_mina(screen):
     for col, row in MINES:
         mine_COLOR_rect = desenha_ret(col, row, padding=18)
@@ -196,7 +236,6 @@ def desenha_mina(screen):
         )
         pygame.draw.circle(screen, MINE_COLOR, mine_COLOR_rect.center, radius)
 
-
 def desenha_navio(screen, col, row):
     ship_COLOR_rect = desenha_ret(col, row, padding=16)
     pygame.draw.rect(screen, SHIP_COLOR, ship_COLOR_rect, border_radius=6)
@@ -222,10 +261,10 @@ def desarma_bomba(ship_col, ship_row):
 
 #def coleta_moedas()
 
-def main():
+def main(fase):
     global OBSTACLES, MINES, COINS, colected_coins
 
-    start_position, finish_position, OBSTACLES, MINES, COINS, total_coins = carregar_level(LEVEL_FILE)
+    start_position, finish_position, OBSTACLES, MINES, COINS, total_coins = carregar_level(fase)
     colected_coins = 0
 
     pygame.init()
@@ -305,4 +344,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    nivel = carregar_fases(LEVEL_FILE)
+    fase = abrir_menu(nivel)
+
+    main(fase)
