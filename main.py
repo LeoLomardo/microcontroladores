@@ -39,14 +39,12 @@ MOVE_BY_KEY = {
 
 colected_coins = 0
 
-def carregar_fases(caminho):
+
+def abrir_menu(caminho):
     with caminho.open("r", encoding="utf-8") as arquivo:
         dados = json.load(arquivo)
 
-    return dados["fases"]
-
-
-def abrir_menu(fases):
+    fases = dados["fases"]
     fase_escolhida = {"fase": None}
 
     janela = tk.Tk()
@@ -63,7 +61,6 @@ def abrir_menu(fases):
 
     dropdown = ttk.Combobox(janela, values=nomes_fases)
     dropdown.pack()
-    dropdown.current(0)
 
     def iniciar():
         nome_selecionado = dropdown.get()
@@ -87,7 +84,7 @@ def carregar_level(fase):
     linhas = fase["mapa"]
 
     if not linhas:
-        raise ValueError(f"Fase com esse id nao foi encontrada")
+        raise ValueError(f"Fase com esse nome nao foi encontrada")
 
     if len(linhas) != GRID_SIZE:
         raise ValueError(f"O level precisa ter {GRID_SIZE} linhas.")
@@ -344,7 +341,6 @@ def main(fase):
 
 
 if __name__ == "__main__":
-    nivel = carregar_fases(LEVEL_FILE)
-    fase = abrir_menu(nivel)
+    fase = abrir_menu(LEVEL_FILE)
 
     main(fase)
