@@ -1,8 +1,11 @@
 from pathlib import Path
+import os
 import json
 import pygame
 import tkinter as tk
 from tkinter import ttk
+
+import controle_serial
 
 GRID_SIZE = 8
 CELL_SIZE = 80
@@ -12,6 +15,11 @@ FPS = 60
 LEVEL_FOLDER = "./levels"
 LEVEL_NAME_JSON = "fases.json"
 LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME_JSON
+
+# Porta onde o Arduino aparece. No Linux costuma ser /dev/ttyUSB0 ou
+# /dev/ttyACM0; no Windows seria algo como "COM3". Para testar sem o Arduino,
+# da pra apontar para uma porta virtual: PORTA_SERIAL=/tmp/ttyGAME python main.py
+PORTA_SERIAL = os.environ.get("PORTA_SERIAL", "/dev/ttyUSB0")
 
 OCEAN_BLUE_COLOR = (37, 139, 207)
 GRID_LINE_COLOR = (18, 86, 140)
@@ -254,9 +262,36 @@ def desarma_bomba(ship_col, ship_row):
         MINES.remove(mina)
 
 
-#coleta moedas
+def aplica_movimento(ship_col, ship_row, delta_col, delta_row, finish_position, total_coins, mensagem_atual):
+    global colected_coins
 
-#def coleta_moedas()
+    next_col = ship_col + delta_col
+    next_row = ship_row + delta_row
+
+    if not valid_position(next_col, next_row):
+        return ship_col, ship_row, mensagem_atual
+
+    ship_col = next_col
+    ship_row = next_row
+    mensagem = ""
+
+    if (ship_col, ship_row) in MINES:
+        mensagem = "EXPLODIU!!!!"
+        print(mensagem)
+    elif (ship_col, ship_row) in COINS:
+        colected_coins += 1
+        mensagem = "COLETOU MOEDA!"
+        print(mensagem)
+        print(colected_coins)
+        COINS.remove((ship_col, ship_row))
+    elif (ship_col, ship_row) == finish_position:
+        if colected_coins == total_coins:
+            mensagem = "CHEGOU AO DESTINO!"
+        else:
+            mensagem = "Falta coletar moedas"
+        print(mensagem)
+
+    return ship_col, ship_row, mensagem
 
 def main(fase):
     global OBSTACLES, MINES, COINS, colected_coins
@@ -277,6 +312,8 @@ def main(fase):
     mensagem = ""
     running = True
 
+    controle_serial.conectar(PORTA_SERIAL)
+
     while running:
         # display_surface.fill(white)
         # display_surface.blit(text, textRect)
@@ -289,36 +326,27 @@ def main(fase):
                 
                 if event.key in MOVE_BY_KEY:
                     delta_col, delta_row = MOVE_BY_KEY[event.key]
-                    next_col = ship_col + delta_col
-                    next_row = ship_row + delta_row
+                    ship_col, ship_row, mensagem = aplica_movimento(
+                        ship_col, ship_row, delta_col, delta_row,
+                        finish_position, total_coins, mensagem)
 
-                    if valid_position(next_col, next_row):
-                        ship_col = next_col
-                        ship_row = next_row
-                        mensagem = ""
-                        
-                        if (ship_col, ship_row) in MINES:
-                            mensagem = "EXPLODIU!!!!"
-                            print(mensagem)
-                        elif(ship_col, ship_row) in COINS:
-                            colected_coins +=1
-                            mensagem = "COLETOU MOEDA!"
-                            print(mensagem)
-                            print(colected_coins)
-                            COINS.remove((ship_col,ship_row))
-                        elif (ship_col, ship_row) == finish_position:
-                            if colected_coins == total_coins:
-                                mensagem = "CHEGOU AO DESTINO!"
-                            else:
-                                mensagem = "Falta coletar moedas"
-
-                            print(mensagem)
-                
                 elif event.key == pygame.K_SPACE:
                     print('leu a barra de espaco\n')
                     desarma_bomba(ship_col, ship_row)
 
-        
+        # comandos vindos do Arduino pela serial (ex.: "2 ESQUERDA", "3 ABAIXO")
+        for instrucao in controle_serial.ler_instrucoes():
+            if instrucao[0] == "FIM":
+                print("Arduino enviou 'Fim' - sequencia de comandos encerrada.")
+            elif instrucao[0] == "MOVER":
+                _, delta_col, delta_row, passos = instrucao
+                # "2 ESQUERDA" = andar 2 casas, uma de cada vez, para passar por
+                # cada celula (coletando moedas / pisando em minas no caminho).
+                for _ in range(passos):
+                    ship_col, ship_row, mensagem = aplica_movimento(
+                        ship_col, ship_row, delta_col, delta_row,
+                        finish_position, total_coins, mensagem)
+
         desenha_tab(screen)
         desenha_ponto_level(screen, fonte, start_position, START_COLOR, "S")
         desenha_ponto_level(screen, fonte, finish_position, FINISH_COLOR, "F")
@@ -337,6 +365,7 @@ def main(fase):
         pygame.display.flip()
         clock.tick(FPS)
 
+    controle_serial.fechar()
     pygame.quit()
 
 

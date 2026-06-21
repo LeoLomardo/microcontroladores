@@ -1,0 +1,3 @@
+- botao voltar ao menu
+- tela de sucesso/morte
+|_>leitura de serial precisa abrir uma nova thread (aperfeicoeamento 10)
