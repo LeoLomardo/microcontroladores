@@ -16,10 +16,7 @@ LEVEL_FOLDER = "./levels"
 LEVEL_NAME_JSON = "fases.json"
 LEVEL_FILE = Path(__file__).parent / LEVEL_FOLDER / LEVEL_NAME_JSON
 
-# Porta onde o Arduino aparece. No Linux costuma ser /dev/ttyUSB0 ou
-# /dev/ttyACM0; no Windows seria algo como "COM3". Para testar sem o Arduino,
-# da pra apontar para uma porta virtual: PORTA_SERIAL=/tmp/ttyGAME python main.py
-PORTA_SERIAL = os.environ.get("PORTA_SERIAL", "/dev/ttyUSB0")
+PORTA_SERIAL = os.environ.get("PORTA_SERIAL", "COM16")
 
 OCEAN_BLUE_COLOR = (37, 139, 207)
 GRID_LINE_COLOR = (18, 86, 140)
@@ -161,7 +158,6 @@ def carregar_level(fase):
 
     return start_position, finish_position, obstacles, mines, coins, len(coins)
 
-
 def valid_position(col, row):
     if col < 0 or col >= GRID_SIZE:
         return False
@@ -217,7 +213,6 @@ def desenha_ponto_level(screen, fonte, position, color, letra):
     texto_rect = texto.get_rect(center=rect.center)
     screen.blit(texto, texto_rect)
 
-#isso aqui eu pedi pro gpt fazer, falta conhecimento artistico
 def desenha_mina(screen):
     for col, row in MINES:
         mine_COLOR_rect = desenha_ret(col, row, padding=18)
@@ -275,7 +270,6 @@ def desarma_bomba(ship_col, ship_row):
     for mina in minas_para_remover:
         MINES.remove(mina)
 
-
 def aplica_movimento(ship_col, ship_row, delta_col, delta_row, finish_position, total_coins, mensagem_atual):
     global colected_coins
 
@@ -308,14 +302,9 @@ def aplica_movimento(ship_col, ship_row, delta_col, delta_row, finish_position, 
     return ship_col, ship_row, mensagem
 
 def tela_final(screen, fonte, titulo, cor_titulo, opcoes):
-    """Mostra uma tela por cima do jogo (morte ou vitoria) e espera a escolha.
-    'opcoes' e uma lista de (tecla, texto, valor_de_retorno).
-    Retorna o valor da opcao escolhida, ou "sair" se fechar a janela."""
     fonte_titulo = pygame.font.SysFont(None, 72)
 
-    fundo = screen.copy()  # "foto" do jogo no instante, para o fundo
     overlay = pygame.Surface((WINDOW_SIZE, WINDOW_SIZE))
-    overlay.set_alpha(180)
     overlay.fill((0, 0, 0))
 
     relogio = pygame.time.Clock()
@@ -329,7 +318,6 @@ def tela_final(screen, fonte, titulo, cor_titulo, opcoes):
                     if event.key == tecla:
                         return valor
 
-        screen.blit(fundo, (0, 0))
         screen.blit(overlay, (0, 0))
 
         titulo_render = fonte_titulo.render(titulo, True, cor_titulo)
@@ -370,7 +358,7 @@ def main(fase):
 
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
-    pygame.display.set_caption("Nacio Microcontroladores")
+    pygame.display.set_caption("Navio Microcontroladores")
 
 
     fonte = pygame.font.SysFont(None, 36)
@@ -383,11 +371,10 @@ def main(fase):
     acao = "sair"  # o que fazer ao terminar: "sair", "reiniciar" ou "menu"
 
     controle_serial.conectar(PORTA_SERIAL)
+    start_enviado = False
+    momento_conexao = pygame.time.get_ticks()
 
     while running:
-        # display_surface.fill(white)
-        # display_surface.blit(text, textRect)
-
         recebeu_fim = False  # vira True quando o Arduino manda "Fim" neste quadro
 
         for event in pygame.event.get():
@@ -407,7 +394,7 @@ def main(fase):
                     print('leu a barra de espaco\n')
                     desarma_bomba(ship_col, ship_row)
 
-        # comandos vindos do Arduino pela serial (ex.: "2 ESQUERDA", "3 ABAIXO")
+        # comandos vindos do Arduino pela serial
         for instrucao in controle_serial.ler_instrucoes():
             if (ship_col, ship_row) in MINES:
                 break  # morreu, ignora o resto dos comandos recebidos
@@ -415,7 +402,7 @@ def main(fase):
                 print("Arduino enviou 'FIM' - sequencia de comandos encerrada.")
                 recebeu_fim = True
             elif instrucao[0] == "ACAO":
-                # bloco ACAO do Arduino = desarmar bomba (mesma acao da barra de espaco)
+                # desarmar bomba
                 desarma_bomba(ship_col, ship_row)
             elif instrucao[0] == "MOVER":
                 _, delta_col, delta_row, passos = instrucao
@@ -444,6 +431,10 @@ def main(fase):
             screen.blit(texto_mensagem, (10, WINDOW_SIZE - 40))
         
         pygame.display.flip()
+        if not start_enviado and pygame.time.get_ticks() - momento_conexao > 3000:
+            start_enviado  = controle_serial.enviar("START")
+            start_enviado = True
+            print("START enviado para o Arduino")
 
         venceu = (ship_col, ship_row) == finish_position and colected_coins == total_coins
 
