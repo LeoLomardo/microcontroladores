@@ -15,8 +15,7 @@ _buffer = ""
 
 
 def conectar(porta, baudrate=9600):
-    """Abre a porta serial do Arduino. Se falhar (Arduino desconectado), o jogo
-    segue funcionando normalmente no WASD."""
+
     global _conexao, _buffer
     _buffer = ""
 
@@ -28,7 +27,6 @@ def conectar(porta, baudrate=9600):
     except SerialException as erro:
         _conexao = None
         print(f"Nao foi possivel abrir a porta serial {porta}: {erro}")
-
 
 def interpretar(linha):
     """
@@ -54,6 +52,7 @@ def interpretar(linha):
 
     try:
         passos = int(quantidade_texto)
+
     except ValueError:
         print(f"Quantidade de passos invalido, instrucao ignorada")
         return None
@@ -90,6 +89,23 @@ def ler_instrucoes():
 
     return instrucoes
 
+def enviar(texto):
+    if _conexao is None:
+        print("START nao enviado: Arduino nao conectado.")
+        return False
+
+    try:
+        mensagem = texto.strip() + "\n"
+
+        _conexao.write(mensagem.encode("UTF-8"))
+        _conexao.flush()
+
+        print(f"Enviado ao Arduino: {mensagem!r}")
+        return True
+
+    except SerialException as erro:
+        print(f"Erro ao enviar para o Arduino: {erro}")
+        return False
 
 def fechar():
     global _conexao
