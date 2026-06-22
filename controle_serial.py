@@ -79,8 +79,10 @@ def ler_instrucoes():
     if quantidade == 0:
         return instrucoes
 
+    #TODO: Rever funcao, pegar jeito feito no projeto: validar necessidade
     _buffer += _conexao.read(quantidade).decode("utf-8", errors="ignore")
 
+    #TODO:rever necessidade \n
     while "\n" in _buffer:
         linha, _buffer = _buffer.split("\n", 1)
         instrucao = interpretar(linha)
@@ -90,10 +92,6 @@ def ler_instrucoes():
     return instrucoes
 
 def enviar(texto):
-    if _conexao is None:
-        print("START nao enviado: Arduino nao conectado.")
-        return False
-
     try:
         mensagem = texto.strip() + "\n"
 
