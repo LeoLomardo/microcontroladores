@@ -87,6 +87,20 @@ def abrir_menu(caminho):
 
     return fase_escolhida["fase"]
 
+def proxima_fase(fase_atual):
+    with LEVEL_FILE.open("r", encoding="utf-8") as arquivo:
+        dados = json.load(arquivo)
+
+    fases = dados["fases"]
+
+    for i, fase in enumerate(fases):
+        if fase["nome"] == fase_atual["nome"]:
+            if i + 1 < len(fases):
+                return fases[i + 1]
+            return None 
+
+    return None
+
 def carregar_level(fase):
 
     linhas = fase["mapa"]
@@ -293,6 +307,61 @@ def aplica_movimento(ship_col, ship_row, delta_col, delta_row, finish_position, 
 
     return ship_col, ship_row, mensagem
 
+def tela_final(screen, fonte, titulo, cor_titulo, opcoes):
+    """Mostra uma tela por cima do jogo (morte ou vitoria) e espera a escolha.
+    'opcoes' e uma lista de (tecla, texto, valor_de_retorno).
+    Retorna o valor da opcao escolhida, ou "sair" se fechar a janela."""
+    fonte_titulo = pygame.font.SysFont(None, 72)
+
+    fundo = screen.copy()  # "foto" do jogo no instante, para o fundo
+    overlay = pygame.Surface((WINDOW_SIZE, WINDOW_SIZE))
+    overlay.set_alpha(180)
+    overlay.fill((0, 0, 0))
+
+    relogio = pygame.time.Clock()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return "sair"
+            if event.type == pygame.KEYDOWN:
+                for tecla, _texto, valor in opcoes:
+                    if event.key == tecla:
+                        return valor
+
+        screen.blit(fundo, (0, 0))
+        screen.blit(overlay, (0, 0))
+
+        titulo_render = fonte_titulo.render(titulo, True, cor_titulo)
+        screen.blit(titulo_render, titulo_render.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2 - 60)))
+
+        y = WINDOW_SIZE // 2 + 20
+        for _tecla, texto, _valor in opcoes:
+            opcao_render = fonte.render(texto, True, TEXT_COLOR)
+            screen.blit(opcao_render, opcao_render.get_rect(center=(WINDOW_SIZE // 2, y)))
+            y += 40
+
+        pygame.display.flip()
+        relogio.tick(30)
+
+def tela_de_morte(screen, fonte):
+    return tela_final(screen, fonte, "VOCE MORREU", (230, 60, 60), [
+        (pygame.K_r, "R - Tentar novamente", "reiniciar"),
+        (pygame.K_m, "M - Voltar ao menu", "menu"),
+    ])
+
+def tela_de_sucesso(screen, fonte):
+    return tela_final(screen, fonte, "VOCE VENCEU!", (60, 200, 90), [
+        (pygame.K_n, "N - Proxima fase", "proxima"),
+        (pygame.K_m, "M - Voltar ao menu", "menu"),
+    ])
+
+def tela_de_falha(screen, fonte):
+    return tela_final(screen, fonte, "FIM DOS COMANDOS", (230, 180, 60), [
+        (pygame.K_r, "R - Tentar novamente", "reiniciar"),
+        (pygame.K_m, "M - Voltar ao menu", "menu"),
+    ])
+
 def main(fase):
     global OBSTACLES, MINES, COINS, colected_coins
 
@@ -311,6 +380,7 @@ def main(fase):
     ship_col, ship_row = start_position
     mensagem = ""
     running = True
+    acao = "sair"  # o que fazer ao terminar: "sair", "reiniciar" ou "menu"
 
     controle_serial.conectar(PORTA_SERIAL)
 
@@ -318,12 +388,15 @@ def main(fase):
         # display_surface.fill(white)
         # display_surface.blit(text, textRect)
 
+        recebeu_fim = False  # vira True quando o Arduino manda "Fim" neste quadro
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                acao = "sair"
                 running = False
 
             if event.type == pygame.KEYDOWN :
-                
+
                 if event.key in MOVE_BY_KEY:
                     delta_col, delta_row = MOVE_BY_KEY[event.key]
                     ship_col, ship_row, mensagem = aplica_movimento(
@@ -336,8 +409,14 @@ def main(fase):
 
         # comandos vindos do Arduino pela serial (ex.: "2 ESQUERDA", "3 ABAIXO")
         for instrucao in controle_serial.ler_instrucoes():
+            if (ship_col, ship_row) in MINES:
+                break  # morreu, ignora o resto dos comandos recebidos
             if instrucao[0] == "FIM":
-                print("Arduino enviou 'Fim' - sequencia de comandos encerrada.")
+                print("Arduino enviou 'FIM' - sequencia de comandos encerrada.")
+                recebeu_fim = True
+            elif instrucao[0] == "ACAO":
+                # bloco ACAO do Arduino = desarmar bomba (mesma acao da barra de espaco)
+                desarma_bomba(ship_col, ship_row)
             elif instrucao[0] == "MOVER":
                 _, delta_col, delta_row, passos = instrucao
                 # "2 ESQUERDA" = andar 2 casas, uma de cada vez, para passar por
@@ -346,6 +425,8 @@ def main(fase):
                     ship_col, ship_row, mensagem = aplica_movimento(
                         ship_col, ship_row, delta_col, delta_row,
                         finish_position, total_coins, mensagem)
+                    if (ship_col, ship_row) in MINES:
+                        break  
 
         desenha_tab(screen)
         desenha_ponto_level(screen, fonte, start_position, START_COLOR, "S")
@@ -363,13 +444,42 @@ def main(fase):
             screen.blit(texto_mensagem, (10, WINDOW_SIZE - 40))
         
         pygame.display.flip()
+
+        venceu = (ship_col, ship_row) == finish_position and colected_coins == total_coins
+
+        if (ship_col, ship_row) in MINES:
+            acao = tela_de_morte(screen, fonte)
+            running = False
+
+        elif venceu:
+            acao = tela_de_sucesso(screen, fonte)
+            running = False
+
+        elif recebeu_fim:
+            # acabaram os comandos do Arduino e o jogador nao chegou ao destino
+            acao = tela_de_falha(screen, fonte)
+            running = False
+
         clock.tick(FPS)
 
     controle_serial.fechar()
     pygame.quit()
+    return acao
 
 
 if __name__ == "__main__":
     fase = abrir_menu(LEVEL_FILE)
 
-    main(fase)
+    while fase is not None:
+        acao = main(fase)
+
+        if acao == "reiniciar":
+            continue                       # roda a mesma fase de novo
+        elif acao == "menu":
+            fase = abrir_menu(LEVEL_FILE)  # volta para a escolha de fase
+        elif acao == "proxima":
+            seguinte = proxima_fase(fase)
+            # se nao houver proxima (era a ultima), volta para o menu
+            fase = seguinte if seguinte is not None else abrir_menu(LEVEL_FILE)
+        else:                              # "sair"
+            break

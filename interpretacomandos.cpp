@@ -175,7 +175,7 @@ void loop() {
     }
     if (comandoAtual == 8 && acabou == false) {
       acabou = true;
-      Serial.println("Fim");
+      Serial.println("FIM");
     }
   }
 }

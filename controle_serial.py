@@ -4,8 +4,7 @@ from serial.serialutil import SerialException
 
 MOVIMENTO_POR_DIRECAO = {
     "CIMA": (0, -1),
-    "ABAIXO": (0, 1),
-    "ABAIXO": (0, 1),       
+    "BAIXO": (0, 1),
     "DIREITA": (1, 0),
     "ESQUERDA": (-1, 0),
 }
@@ -35,6 +34,7 @@ def interpretar(linha):
     """
     Retorna:
         ("FIM",)                                  -> fim da sequencia
+        ("ACAO",)                                 -> desarmar a bomba (bloco ACAO)
         ("MOVER", delta_col, delta_row, passos)   -> basicamente um vetor com direção eixo x, eixo y e tamanho do vetor ()
     """
     linha = linha.strip()
@@ -52,14 +52,17 @@ def interpretar(linha):
 
     quantidade_texto, direcao = partes
 
-    if direcao not in MOVIMENTO_POR_DIRECAO:
-        print(f"Instrucao desconhecida, foi ignorada")
-        return None
-
     try:
         passos = int(quantidade_texto)
     except ValueError:
         print(f"Quantidade de passos invalido, instrucao ignorada")
+        return None
+
+    if direcao == "ACAO":
+        return ("ACAO",)
+
+    if direcao not in MOVIMENTO_POR_DIRECAO:
+        print(f"Instrucao desconhecida, foi ignorada")
         return None
 
     delta_col, delta_row = MOVIMENTO_POR_DIRECAO[direcao]
