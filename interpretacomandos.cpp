@@ -52,6 +52,7 @@ int jaFiz = 0;
 int repeticoes = 0;
 bool acabou = false;
 bool botaoPressionado = false;
+bool iniciado = false;
 
 bool interpretarComandos(String lista[16]) {
   for (int i = 0; i < 8; i++) {
@@ -125,14 +126,33 @@ void soltou(GFButton& botao) {
 
 void setup() {
   Serial.begin(9600);
-  interpretacaoConcluida = interpretarComandos(lista);
   botao.setPressHandler(apertou);
   botao.setReleaseHandler(soltou);
 }
 
+void verificarInicio() {
+  if (Serial.available() > 0) {
+    String texto = Serial.readStringUntil('\n');
+    texto.trim();
+    if (texto == "START") {
+      interpretacaoConcluida = interpretarComandos(lista);
+      if (interpretacaoConcluida) {
+        comandoAtual = 0;
+        jaFiz = 0;
+        acabou = false;
+        tempoAnterior = millis();
+        iniciado = true;
+      }
+    }
+  }
+}
+
 void loop() {
   botao.process();
-  if (interpretacaoConcluida && comandoAtual < 8) {
+  if (!iniciado) {
+    verificarInicio();
+  }
+  if (iniciado && interpretacaoConcluida && comandoAtual < 8) {
     unsigned long tempoAtual = millis();
     if (tempoAtual > tempoAnterior + 1000) {
       tempoAnterior = tempoAtual;
@@ -176,6 +196,7 @@ void loop() {
     if (comandoAtual == 8 && acabou == false) {
       acabou = true;
       Serial.println("FIM");
+      iniciado=false;
     }
   }
 }
