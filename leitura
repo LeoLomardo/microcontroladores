@@ -1,0 +1,130 @@
+int casasMovimento[8];
+int casasQuantidade[8];
+int casasMovimentoAnterior[8];
+int casasQuantidadeAnterior[8];
+int intervalosAnalog[15] = { 0, 137, 178, 221, 285, 372, 465, 548, 625, 673, 753, 810, 887, 943, 1023 };
+unsigned long tempAtual, tempAnterior = 0;
+String superComando = "ini ";
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  Serial1.begin(9600);
+  Serial1.println("limpar");
+  for (int i = 0; i < 8; i++) {
+    int valor = analogRead(A0 + i);  // valores lidos estão corretos
+    for (int k = 0; k < 4; k++) {
+      valor += analogRead(A0 + i);
+    }
+    int media = valor / 5;
+    casasMovimento[i] = identBloco(media);
+    int quant = analogRead(A0 + i + 8);  // valores lidos estão corretos
+    for (int k = 0; k < 4; k++) {
+      quant += analogRead(A0 + i + 8);    //soma vários valores lidos, para então usar a média
+    }
+    int medQuant = quant/5;
+    casasQuantidade[i] = identBloco(medQuant);
+
+    superComando += converteComando(casasMovimento[i], i + 1, 1) + " ";
+    superComando += converteComando(casasQuantidade[i], i + 1, 2) + " ";
+  }
+  delay(3000);
+  Serial1.println(superComando);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (tempAtual - tempAnterior > 600) {
+    tempAnterior = tempAtual;
+    for (int i = 0; i < 8; i++) {
+      int valor = analogRead(A0 + i);  // valores lidos estão corretos
+      for (int k = 0; k < 4; k++) {
+        valor += analogRead(A0 + i);
+      }
+      int media = valor/5;
+      casasMovimento[i] = identBloco(media);
+      int quant = analogRead(A0 + i + 8);  // valores lidos estão corretos
+      for (int k = 0; k < 4; k++) {
+        quant += analogRead(A0 + i + 8);
+      }
+      int medQuant = quant/5;
+      casasQuantidade[i] = identBloco(medQuant);
+    }
+    for (int i = 0; i < 8; i++) {
+      if (casasMovimentoAnterior[i] != casasMovimento[i]) {
+        if (casasMovimento[i] != 0) {
+          Serial1.println(converteComando(0, i + 1, 1));
+        }
+        String comandoMov = converteComando(casasMovimento[i], i + 1, 1);
+        Serial1.println(comandoMov);
+        Serial.println(comandoMov);
+      }
+      if (casasQuantidadeAnterior[i] != casasQuantidade[i]) {
+        if (casasQuantidade[i] != 0) {
+          Serial1.println(converteComando(0, i + 1, 2));
+        }
+        String comandoQuant = converteComando(casasQuantidade[i], i + 1, 2);
+        Serial1.println(comandoQuant);
+        Serial.println(comandoQuant);
+      }
+      tempAtual = millis();
+    }
+  }
+  vetorParaVetor(casasMovimentoAnterior, casasMovimento);
+  vetorParaVetor(casasQuantidadeAnterior, casasQuantidade);
+
+  tempAtual = millis();
+
+  if (Serial.available() > 0) {  // if para checar se tá tudo certo
+    String comando = Serial.readStringUntil('\n');
+    comando.trim();
+    Serial.println(comando);
+    for (int j = 0; j < 8; j++) {
+      Serial.println(casasMovimento[j]);
+    }
+    for (int j = 0; j < 8; j++) {
+      Serial.println(casasQuantidade[j]);
+    }
+    Serial.println(superComando);
+  }
+}
+
+int identBloco(int valor) {
+  for (int i = 0; i < 14; i++) {
+    if (intervalosAnalog[i] <= valor && intervalosAnalog[i + 1] > valor) {
+      return i;
+    }
+  }
+  if (valor == 1023) {
+    return 12;
+  }
+}
+
+void vetorParaVetor(int antigo[], int atual[]) {
+  for (int i = 0; i < 8; i++) {
+    antigo[i] = atual[i];
+  }
+  return;
+}
+
+String converteComando(int tipo, int posicao, int linha) {
+  if (tipo == 0) {
+    return "remover " + String(linha) + " " + String(posicao);
+  } else if (tipo >= 1 && tipo <= 7) {
+    return String(tipo) + " " + String(linha) + " " + String(posicao);
+  } else if (tipo == 8) {
+    return "if " + String(linha) + " " + String(posicao);
+  } else if (tipo == 9) {
+    return "loop " + String(linha) + " " + String(posicao);
+  } else if (tipo == 10) {
+    return "direita " + String(linha) + " " + String(posicao);
+  } else if (tipo == 11) {
+    return "esquerda " + String(linha) + " " + String(posicao);
+  } else if (tipo == 12) {
+    return "tras " + String(linha) + " " + String(posicao);
+  } else if (tipo == 13) {
+    return "frente " + String(linha) + " " + String(posicao);
+  } else {
+    return "remover " + String(linha) + " " + String(posicao);
+  }
+}
