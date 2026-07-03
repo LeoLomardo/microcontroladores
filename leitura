@@ -96,7 +96,7 @@ int identBloco(int valor) {
     }
   }
   if (valor == 1023) {
-    return 12;
+    return 13;
   }
 }
 
@@ -113,7 +113,7 @@ String converteComando(int tipo, int posicao, int linha) {
   } else if (tipo >= 1 && tipo <= 6) {
     return String(tipo) + " " + String(linha) + " " + String(posicao);
   } else if (tipo == 7) {
-    return "acao" + String(linha) + " " + String(posicao);
+    return "acao " + String(linha) + " " + String(posicao);
   } else if (tipo == 8) {
     return "if " + String(linha) + " " + String(posicao);
   } else if (tipo == 9) {
