@@ -2,7 +2,7 @@ int casasMovimento[8];
 int casasQuantidade[8];
 int casasMovimentoAnterior[8];
 int casasQuantidadeAnterior[8];
-int intervalosAnalog[15] = { 0, 137, 178, 221, 285, 372, 465, 548, 625, 673, 753, 810, 887, 943, 1023 };
+int intervalosAnalog[15] = { 0, 137, 178, 221, 285, 372, 465, 548, 625, 673, 767, 819, 887, 943, 1023 };
 unsigned long tempAtual, tempAnterior = 0;
 String superComando = "ini ";
 
@@ -20,9 +20,9 @@ void setup() {
     casasMovimento[i] = identBloco(media);
     int quant = analogRead(A0 + i + 8);  // valores lidos estão corretos
     for (int k = 0; k < 4; k++) {
-      quant += analogRead(A0 + i + 8);    //soma vários valores lidos, para então usar a média
+      quant += analogRead(A0 + i + 8);  //soma vários valores lidos, para então usar a média
     }
-    int medQuant = quant/5;
+    int medQuant = quant / 5;
     casasQuantidade[i] = identBloco(medQuant);
 
     superComando += converteComando(casasMovimento[i], i + 1, 1) + " ";
@@ -41,13 +41,13 @@ void loop() {
       for (int k = 0; k < 4; k++) {
         valor += analogRead(A0 + i);
       }
-      int media = valor/5;
+      int media = valor / 5;
       casasMovimento[i] = identBloco(media);
       int quant = analogRead(A0 + i + 8);  // valores lidos estão corretos
       for (int k = 0; k < 4; k++) {
         quant += analogRead(A0 + i + 8);
       }
-      int medQuant = quant/5;
+      int medQuant = quant / 5;
       casasQuantidade[i] = identBloco(medQuant);
     }
     for (int i = 0; i < 8; i++) {
@@ -110,8 +110,10 @@ void vetorParaVetor(int antigo[], int atual[]) {
 String converteComando(int tipo, int posicao, int linha) {
   if (tipo == 0) {
     return "remover " + String(linha) + " " + String(posicao);
-  } else if (tipo >= 1 && tipo <= 7) {
+  } else if (tipo >= 1 && tipo <= 6) {
     return String(tipo) + " " + String(linha) + " " + String(posicao);
+  } else if (tipo == 7) {
+    return "acao" + String(linha) + " " + String(posicao);
   } else if (tipo == 8) {
     return "if " + String(linha) + " " + String(posicao);
   } else if (tipo == 9) {
