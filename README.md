@@ -56,7 +56,7 @@ O fluxo completo de uma partida:
   * Mantém uma **fila de execução** (`MAX_FILA = 100`): ao receber `iniciar`, expande loops (bloco VEZES clona o trecho desde o índice do LOOP) e movimentos multiplicados em instruções unitárias, exibidas uma a uma a cada 1 s.
 * **Tabuleiro e blocos impressos em 3D** com resistores internos: cada bloco produz uma tensão característica lida pelo ADC.
 
-<img width="1522" height="807" alt="Captura de tela 2026-07-06 153741" src="https://github.com/user-attachments/assets/730a9edf-e172-42cb-95f3-e3d5d9be78ac" />
+<img width="3441" height="1757" alt="Diagrama_blocos_programacao_bb" src="https://github.com/user-attachments/assets/043370ae-b938-4e0d-9e92-e419c06888a1" />
 
 ---
 
