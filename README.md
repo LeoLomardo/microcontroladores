@@ -1,3 +1,4 @@
+<img width="1522" height="807" alt="Captura de tela 2026-07-06 153741" src="https://github.com/user-attachments/assets/730a9edf-e172-42cb-95f3-e3d5d9be78ac" />
 # Jogo de Programação Tangível com Arduino e Pygame
 
 Projeto desenvolvido na disciplina de **Projeto de Microcontroladores (PUC-Rio)**. O sistema é uma **Tangible User Interface (TUI)**: em vez de teclado ou joystick, o jogador programa os movimentos de um navio encaixando **blocos físicos de lógica** (setas, loops, condicionais e números) em um tabuleiro eletrônico. Dois Arduinos leem, validam e executam esse "programa físico", enquanto um jogo em **Pygame** no computador renderiza o mundo marítimo e aplica as regras.
