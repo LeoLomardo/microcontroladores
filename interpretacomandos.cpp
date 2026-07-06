@@ -292,6 +292,7 @@ void verificarSerial() {
         acabou = false;
         tempoAnterior = millis();
         iniciado = true;
+        Serial1.println("iniciar");
       }
     }
   }
