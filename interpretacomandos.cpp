@@ -315,8 +315,9 @@ void loop() {
   verificarSerial();
   if (!iniciado) {
     atualizarTabuleiro();
-    return;
   }
+  else
+  {
   if (interpretacaoConcluida && comandoAtual < 8) {
     unsigned long tempoAtual = millis();
     if (tempoAtual > tempoAnterior + 1000) {
@@ -359,4 +360,5 @@ void loop() {
       Serial.println("FIM");
     }
   }
+}
 }
