@@ -48,8 +48,8 @@ O fluxo completo de uma partida:
 * **Arduino Leitor** (`interpretacomandos.cpp`)
   * 16 entradas analógicas (**A0–A7** para comandos, **A8–A15** para quantidades).
   * Botão físico no pino digital **2**, gerenciado pela biblioteca **GFButton** — usado como condição do bloco **IF** (se pressionado, segue em frente; senão, salta para o índice indicado na Linha 2).
-  * Comunica-se com o PC pela **Serial USB** e com o Walter pela **Serial1**, ambas a **9600 baud**.
-* **Arduino Mega "Walter"** (`codigo_arduino_Walter.ino`)
+  * Comunica-se com o PC pela **Serial USB** e com o display pela **Serial1**, ambas a **9600 baud**.
+* **Arduino Mega com Shield Display** (`codigo_arduino_Walter.ino`)
   * **Display LCD TFT** via `MCUFRIEND_kbv` + `Adafruit_GFX`: desenha a matriz 2×8 de blocos com mini-símbolos (setas, círculo de loop, "X" do multiplicador, "!" da ação) e a bolinha de rastreio da coluna em execução.
   * **Fita NeoPixel de 16 LEDs** (`Adafruit_NeoPixel`) no pino **24** — cada coluna física do tabuleiro mapeia para o LED `coluna × 2`, com a cor do comando ativo.
   * **Buzzer passivo** no pino **26** — frequências de ~110 Hz a ~880 Hz distinguem movimentos, loops, erros, vitória e derrota.
@@ -69,13 +69,13 @@ O fluxo completo de uma partida:
 | `7` | ACAO | 1 | Roxo ("!") | Desarma minas no raio de 1 célula ao redor do navio |
 | `8` | IF | 1 | — | Condicional: avança se o botão físico estiver pressionado, senão salta |
 | `9` | LOOP | 1 | Laranja (círculo) | Marca o início de um trecho repetível; Linha 2 indica o índice de retorno |
-| `4`* | VEZES | 1 | Branco ("X") | Multiplicador do loop anterior (na expansão de fila do Walter) |
+| `4`* | VEZES | 1 | Branco ("X") | Multiplicador do loop anterior (na expansão de fila do display) |
 | `10` | DIREITA | 1 | Azul (seta →) | Move o navio para leste |
 | `11` | ESQUERDA | 1 | Azul (seta ←) | Move para oeste |
 | `12` | TRAS / BAIXO | 1 | Verde (seta ↓) | Move para o sul |
 | `13` | FRENTE / CIMA | 1 | Verde (seta ↑) | Move para o norte |
 
-\* No protocolo de exibição do Walter, os tipos são remapeados para 1–7 (`frente`, `direita`, `loop`, `vezes`, `tras`, `esquerda`, `acao`).
+\* No protocolo de exibição do display, os tipos são remapeados para 1–7 (`frente`, `direita`, `loop`, `vezes`, `tras`, `esquerda`, `acao`).
 
 **Validação de sintaxe** (feita no Leitor antes de executar): números não podem aparecer na Linha 1; comandos/LOOP/IF não podem aparecer na Linha 2; todo LOOP exige um número de retorno válido (que aponte para trás) e a casa seguinte vazia na Linha 1; IF exige número na Linha 2. Qualquer violação envia `ERRO` ao PC e aborta a execução — impedindo, por exemplo, loops que voltariam para frente de si mesmos.
 
@@ -98,7 +98,7 @@ O fluxo completo de uma partida:
 | `FIM` | Fim da pilha de comandos → tela de falha se não venceu |
 | `ERRO` | Sintaxe física inválida |
 
-**Leitor → Walter (Serial1)** e **PC → Walter**
+**Leitor → display (Serial1)** e **PC → display**
 
 | Mensagem | Efeito |
 | :--- | :--- |
@@ -180,7 +180,7 @@ pip install -r requirements.txt
 | :--- | :--- |
 | **Eletrônica analógica** | Blocos com divisores resistivos → identificação por janelas de tensão no ADC |
 | **Sistemas embarcados (C/C++)** | Máquinas de estado, temporização não-bloqueante (`millis()`), validação de linguagem, filas de execução |
-| **Comunicação serial** | Protocolo textual próprio em três pontas (Leitor ↔ Walter ↔ PC) |
+| **Comunicação serial** | Protocolo textual próprio em três pontas (Leitor ↔ Display ↔ PC) |
 | **Computação gráfica / jogos (Python)** | Renderização, física de grade, estados de jogo e UX de fases |
 | **Design/fabricação** | Blocos e tabuleiro impressos em 3D como interface tangível |
 
