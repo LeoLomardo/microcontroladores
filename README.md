@@ -26,7 +26,7 @@ O jogador precisa resolver fases de um jogo digital montando a lógica de movime
 ## Estrutura do repositório
 
 - codigo_arduino_Walter/: Código C do Arduino responsável pelo display, LEDs e som.
-- levels/: Arquivos JSON com a configuração das fases do jogo.
+- levels/: Arquivo JSON com a configuração das fases do jogo.
 - teorias/: Materiais de apoio e anotações do projeto.
 - main.py: Arquivo principal do jogo em Pygame.
 - controle_serial.py: Gerencia a comunicação via porta serial entre o PC e o hardware.
