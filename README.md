@@ -19,7 +19,7 @@ Guiar um navio da posição inicial (**S**) até o destino (**F**) em uma matriz
       (divisores resistivos)
               │  analogRead A0–A15
               ▼
-[ Arduino Leitor ]  ── Serial1 ──►  [ Arduino Walter (Mega) ]
+[ Arduino Leitor ]  ── Serial1 ──►  [ Arduino Display (Mega) ]
    interpretacomandos.cpp               codigo_arduino_Walter.ino
    • lê e valida a sintaxe              • display LCD TFT (matriz 2×8)
    • executa o programa físico          • fita NeoPixel (16 LEDs)
@@ -36,10 +36,10 @@ O fluxo completo de uma partida:
 
 1. **Montagem:** o jogador insere blocos em uma matriz física **2×8** — a **Linha 1** define o tipo de comando (setas, LOOP, IF/VEZES, AÇÃO) e a **Linha 2** define parâmetros numéricos (quantidade de passos ou índice de retorno do loop).
 2. **Leitura analógica:** cada casa do tabuleiro é um divisor resistivo. O Arduino Leitor faz 5 leituras por casa (`analogRead` em A0–A15), tira a média e classifica o valor em uma das 14 janelas de tensão do vetor `intervalosAnalog`, identificando qual bloco está encaixado.
-3. **Espelhamento em tempo real:** a cada 600 ms o Leitor detecta mudanças no tabuleiro e envia deltas via `Serial1` para o Arduino Walter, que redesenha a matriz 2×8 no display TFT, acende o LED correspondente na fita NeoPixel e toca frequências distintas no buzzer para cada tipo de bloco.
+3. **Espelhamento em tempo real:** a cada 600 ms o Leitor detecta mudanças no tabuleiro e envia deltas via `Serial1` para o Arduino Display, que redesenha a matriz 2×8 no display TFT, acende o LED correspondente na fita NeoPixel e toca frequências distintas no buzzer para cada tipo de bloco.
 4. **Início:** o jogador escolhe a fase no menu (Tkinter) e o Pygame envia **`START`** pela porta serial. O Leitor congela a leitura, **valida a sintaxe** do programa físico (loops sem alvo, números órfãos e blocos em linha errada geram `ERRO`) e começa a execução.
-5. **Execução:** a cada 1 segundo o Leitor consome um comando e envia ao PC strings como `3 CIMA` ou `1 ACAO`. O Walter acompanha a execução com uma **bolinha azul de rastreio** sob a coluna ativa no display. O Pygame move o navio célula a célula, aplicando colisão, coleta de moedas e explosão de minas.
-6. **Desfecho:** quando a pilha de comandos termina, o Leitor envia **`FIM`**. O Pygame decide entre vitória, derrota ou falta de comandos, e pode disparar `vitoria`/`derrota` de volta ao hardware — o Walter pisca a fita em verde (com ✓ na tela) ou vermelho (com ✗), acompanhado de tons no buzzer.
+5. **Execução:** a cada 1 segundo o Leitor consome um comando e envia ao PC strings como `3 CIMA` ou `1 ACAO`. O Arduino Display acompanha a execução com uma **bolinha azul de rastreio** sob a coluna ativa no display. O Pygame move o navio célula a célula, aplicando colisão, coleta de moedas e explosão de minas.
+6. **Desfecho:** quando a pilha de comandos termina, o Leitor envia **`FIM`**. O Pygame decide entre vitória, derrota ou falta de comandos, e pode disparar `vitoria`/`derrota` de volta ao hardware — o Arduino Display pisca a fita em verde (com ✓ na tela) ou vermelho (com ✗), acompanhado de tons no buzzer.
 
 ---
 
