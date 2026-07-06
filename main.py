@@ -350,18 +350,11 @@ def tela_de_falha(screen, fonte):
         (pygame.K_m, "M - Voltar ao menu", "menu"),
     ])
 
-def main(fase):
+def main(fase, screen, fonte):
     global OBSTACLES, MINES, COINS, colected_coins
 
     start_position, finish_position, OBSTACLES, MINES, COINS, total_coins = carregar_level(fase)
     colected_coins = 0
-
-    pygame.init()
-    screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
-    pygame.display.set_caption("Navio Microcontroladores")
-
-
-    fonte = pygame.font.SysFont(None, 36)
 
     clock = pygame.time.Clock()
 
@@ -454,15 +447,22 @@ def main(fase):
         clock.tick(FPS)
 
     controle_serial.fechar()
-    pygame.quit()
     return acao
 
 
 if __name__ == "__main__":
     fase = abrir_menu(LEVEL_FILE)
 
+    # Inicializa o pygame uma unica vez: janela, fonte e subsistemas sao
+    # reaproveitados entre as fases, em vez de recriados a cada troca de fase.
+    if fase is not None:
+        pygame.init()
+        screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+        pygame.display.set_caption("Navio Microcontroladores")
+        fonte = pygame.font.SysFont(None, 36)
+
     while fase is not None:
-        acao = main(fase)
+        acao = main(fase, screen, fonte)
 
         if acao == "reiniciar":
             continue                       # roda a mesma fase de novo
@@ -474,3 +474,5 @@ if __name__ == "__main__":
             fase = seguinte if seguinte is not None else abrir_menu(LEVEL_FILE)
         else:                              # "sair"
             break
+
+    pygame.quit()
