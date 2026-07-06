@@ -182,3 +182,7 @@ pip install -r requirements.txt
 | **Comunicação serial** | Protocolo textual próprio em três pontas (Leitor ↔ Walter ↔ PC) |
 | **Computação gráfica / jogos (Python)** | Renderização, física de grade, estados de jogo e UX de fases |
 | **Design/fabricação** | Blocos e tabuleiro impressos em 3D como interface tangível |
+
+## Diagrama do Fritzing
+
+<img width="1522" height="807" alt="Captura de tela 2026-07-06 153741" src="https://github.com/user-attachments/assets/730a9edf-e172-42cb-95f3-e3d5d9be78ac" />
