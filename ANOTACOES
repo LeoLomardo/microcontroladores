@@ -1,5 +1,0 @@
-socat -d -d pty,raw,echo=0,link=/tmp/ttyGAME pty,raw,echo=0,link=/tmp/ttyARDUINO   
-
-PORTA_SERIAL=/tmp/ttyGAME .venv/bin/python main.py
-
-.venv/bin/python simula_arduino.py /tmp/ttyARDUINO 
